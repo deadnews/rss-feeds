@@ -1,3 +1,4 @@
+// Package main provides rss-feeds, an Atom feed generator with pluggable sources.
 package main
 
 import (
@@ -5,7 +6,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
@@ -23,11 +24,14 @@ var sources = []Source{
 }
 
 func main() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, nil)))
+
 	outDir := flag.String("out", "dist", "output directory")
 	flag.Parse()
 
 	if err := run(*outDir); err != nil {
-		log.Fatalf("feed generation failed: %v", err)
+		slog.Error("Fatal error", "error", err)
+		os.Exit(1)
 	}
 }
 
@@ -43,7 +47,7 @@ func run(outDir string) error {
 	var failed int
 	for _, src := range sources {
 		if err := generate(ctx, outDir, src); err != nil {
-			log.Printf("%s: %v", src.Name(), err)
+			slog.Error("Failed to generate feed", "source", src.Name(), "error", err)
 			failed++
 		}
 	}
@@ -72,6 +76,6 @@ func generate(ctx context.Context, outDir string, src Source) error {
 	if err := os.WriteFile(path, buf.Bytes(), 0o600); err != nil {
 		return fmt.Errorf("write file: %w", err)
 	}
-	log.Printf("wrote %s (%d entries)", path, len(feed.Items))
+	slog.Info("Wrote feed", "path", path, "entries", len(feed.Items))
 	return nil
 }

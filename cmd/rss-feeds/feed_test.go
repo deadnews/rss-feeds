@@ -6,10 +6,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -108,9 +107,10 @@ func TestFetchHistoryLogsTransientError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	var logs strings.Builder
-	log.SetOutput(&logs)
-	defer log.SetOutput(os.Stderr)
+	var logs bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logs, nil)))
+	defer slog.SetDefault(prev)
 
 	if items := fetchHistory(context.Background(), srv.URL); items != nil {
 		t.Errorf("got %v, want nil on decode error", items)

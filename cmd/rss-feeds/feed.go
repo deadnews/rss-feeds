@@ -1,4 +1,3 @@
-// Package main generates Atom feeds from pluggable sources, one file per source.
 package main
 
 import (
@@ -7,7 +6,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -106,7 +105,7 @@ func fetchHistory(ctx context.Context, url string) []Item {
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("history: fetch %s: %v", url, err)
+		slog.Warn("Failed to fetch history", "url", url, "error", err)
 		return nil
 	}
 	defer resp.Body.Close()
@@ -116,7 +115,7 @@ func fetchHistory(ctx context.Context, url string) []Item {
 
 	var doc atomFeed
 	if err := xml.NewDecoder(resp.Body).Decode(&doc); err != nil {
-		log.Printf("history: decode %s: %v", url, err)
+		slog.Warn("Failed to decode history", "url", url, "error", err)
 		return nil
 	}
 	items := make([]Item, len(doc.Entries))
